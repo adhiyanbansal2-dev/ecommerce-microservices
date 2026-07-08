@@ -1,0 +1,72 @@
+version: "3.9"
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "Your_password123"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  api-gateway:
+    build: ./backend/ApiGateway
+    ports:
+      - "5000:8080"
+    depends_on:
+      - identity-service
+      - product-service
+      - cart-service
+      - order-service
+
+  identity-service:
+    build: ./backend/Services/IdentityService
+    ports:
+      - "5001:8080"
+    depends_on:
+      - sqlserver
+
+  product-service:
+    build: ./backend/Services/ProductService
+    ports:
+      - "5002:8080"
+    depends_on:
+      - sqlserver
+      - redis
+
+  cart-service:
+    build: ./backend/Services/CartService
+    ports:
+      - "5003:8080"
+    depends_on:
+      - redis
+
+  order-service:
+    build: ./backend/Services/OrderService
+    ports:
+      - "5004:8080"
+    depends_on:
+      - sqlserver
+      - rabbitmq
+
+  payment-service:
+    build: ./backend/Services/PaymentService
+    ports:
+      - "5005:8080"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
